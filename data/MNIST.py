@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from keras.datasets import mnist
 
 class MNIST(object):
     def __init__(self, sampleSize=-1):
@@ -14,3 +15,4 @@ class MNIST(object):
 
     def getTrainingData(self):
         return self.X_train, self.y_train
+

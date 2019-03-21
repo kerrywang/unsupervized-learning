@@ -4,9 +4,13 @@ from sklearn.cluster import KMeans
 from scipy.spatial.distance import cdist
 import time
 import collections
+from data import MNIST, FHR
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from sklearn.mixture import GaussianMixture
+from sklearn.decomposition import PCA
+from sklearn.random_projection import GaussianRandomProjection, SparseRandomProjection
+
 
 class AbstactCluster(abc.ABC):
     def __init__(self, X, y, k):
@@ -59,7 +63,7 @@ class KMeanCluster(AbstactCluster):
 class ExpectedMaximization(AbstactCluster):
     def __init__(self, X, y, k):
         super().__init__(X, y, k)
-        self.algo = GaussianMixture(n_components=self.nClusters)
+        self.algo = GaussianMixture(n_components=self.nClusters, random_state=0)
 
     def performCluster(self):
         startTime = time.time()
@@ -69,10 +73,59 @@ class ExpectedMaximization(AbstactCluster):
 
 
     def getBiasScore(self):
-        return self.algo.bic(self.X)
+        distance = cdist(self.X, self.algo.means_, 'euclidean')
+        return sum(np.sum(np.multiply(cdist(self.X, self.algo.means_, 'euclidean'), self.algo.predict_proba(self.X)), axis=1)) / self.X.shape[0]
 
     def prediction(self):
-        return np.argmax(self.algo.predict(self.X), axis=1)
+        return self.algo.predict(self.X)
 
 
 
+if __name__=="__main__":
+    # mnist = MNIST(10000)
+    fhr = FHR()
+    mnist = MNIST(10000)
+    print (fhr.X_train.shape)
+
+    trainX = SparseRandomProjection(random_state=0, n_components=400).fit_transform(mnist.X_train)
+    trainY = mnist.y_train
+    # trainX = FHR.X_train
+    # trainY = FHR.y_train
+
+    scores = []
+    compareScores = []
+    kRange = range(2, 200, 5)
+    for k in kRange:
+        newCluster = ExpectedMaximization(trainX, trainY, k)
+        newCluster.performCluster()
+        testCluster = ExpectedMaximization(mnist.X_train, mnist.y_train, k)
+        testCluster.performCluster()
+
+        compareScores.append(testCluster.getClassification())
+        scores.append(newCluster.getClassification())
+    plt.plot(kRange, scores, 'o-')
+    plt.plot(kRange, compareScores, 'ro-')
+    plt.legend(['RCA-processed', 'Original'])
+    plt.xlabel('k')
+    plt.ylabel('accuracy')
+    plt.title("RCA + EM cluster Form MNIST (Accuracy)")
+    plt.show()
+
+
+    # newCluster = ExpectedMaximization(mnist.X_train, mnist.y_train, 10)
+    # newCluster.performCluster()
+    # print(newCluster.getClassification())
+
+
+    #
+    # scores = []
+    # kRange = range(1, 20)
+    # for k in kRange:
+    #     newCluster = ExpectedMaximization(fhr.X_train, fhr.y_train, k)
+    #     newCluster.performCluster()
+    #     scores.append(newCluster.getBiasScore())
+    #
+    # plt.plot(kRange, scores, 'o-')
+    # plt.xlabel('k')
+    # plt.ylabel('bias')
+    # plt.show()
