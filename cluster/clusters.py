@@ -7,6 +7,7 @@ import collections
 from data import MNIST, FHR
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
+from sklearn.decomposition import FastICA
 from sklearn.mixture import GaussianMixture
 from sklearn.decomposition import PCA
 from sklearn.random_projection import GaussianRandomProjection, SparseRandomProjection
@@ -87,14 +88,14 @@ if __name__=="__main__":
     mnist = MNIST(10000)
     print (fhr.X_train.shape)
 
-    trainX = SparseRandomProjection(random_state=0, n_components=400).fit_transform(mnist.X_train)
+    trainX = FastICA(random_state=0, n_components=160).fit_transform(mnist.X_train)
     trainY = mnist.y_train
     # trainX = FHR.X_train
     # trainY = FHR.y_train
 
     scores = []
     compareScores = []
-    kRange = range(2, 200, 5)
+    kRange = range(2, 41, 1)
     for k in kRange:
         newCluster = ExpectedMaximization(trainX, trainY, k)
         newCluster.performCluster()
